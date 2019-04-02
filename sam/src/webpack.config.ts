@@ -5,7 +5,8 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 
 const config: Configuration = {
     entry: {
-        helloWorld: ['./src/source-map-install.ts', './src/hello-world.ts']
+        addItem: ['./src/source-map-install.ts', './src/add-item.ts'],
+        listItems: ['./src/source-map-install.ts', './src/list-items.ts']
     },
     devtool: 'source-map',
     output: {
@@ -27,7 +28,11 @@ const config: Configuration = {
         plugins: [new TsconfigPathsPlugin({})]
     },
     plugins: [
-        new BundleAnalyzerPlugin({ analyzerMode: 'static', reportFilename: 'stats.report.html', openAnalyzer: false })
+        new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: 'stats.report.html',
+            openAnalyzer: false
+        })
     ],
     externals: { 'aws-sdk': 'aws-sdk' },
     mode: 'development',
