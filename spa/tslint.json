@@ -30,6 +30,7 @@
         "use-pipe-transform-interface": true,
         "component-class-suffix": true,
         "directive-class-suffix": true,
-        "cyclomatic-complexity": [true, 20]
+        "cyclomatic-complexity": [true, 20],
+        "no-console": false
     }
 }

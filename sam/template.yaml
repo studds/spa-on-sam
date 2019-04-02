@@ -1,9 +1,17 @@
-AWSTemplateFormatVersion: "2010-09-09"
+AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: >
-    sam-app
+Description: SAM template for SPA on Sam
 
-    Sample SAM Template for sam-app
+Parameters:
+    DomainName:
+        Type: String
+        Description: Public domain name for app
+    CertificateARN:
+        Type: String
+        Description: ARN of the AWS Certificate Manager managed certificate to use for the domain name
+
+Conditions:
+    HasDomainName: !Not [!Equals [!Ref DomainName, '']]
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -23,3 +31,113 @@ Resources:
                     Properties:
                         Path: /api/hello
                         Method: get
+                        RestApiId:
+                            Ref: SpaOnSamApi
+
+    # The WebBucket is a public bucket to store the SPA
+    WebBucket:
+        Type: 'AWS::S3::Bucket'
+        Properties:
+            BucketName: !Sub '${AWS::StackName}-web'
+            AccessControl: PublicRead
+            WebsiteConfiguration:
+                IndexDocument: index.html
+                ErrorDocument: index.html
+
+    # The DataBucket is a private bucket to store the data created by the SPA
+    DataBucket:
+        Type: 'AWS::S3::Bucket'
+        Properties:
+            BucketName: !Sub '${AWS::StackName}-data'
+
+    # We use CloudFront to "unite" the statically hosted website and with the backend, so that they appear to be served
+    # from a single site
+    WebsiteCDN:
+        Type: 'AWS::CloudFront::Distribution'
+        Properties:
+            DistributionConfig:
+                Comment: !Sub 'CDN for ${AWS::StackName}'
+                Aliases: !If [HasDomainName, [!Ref DomainName], []]
+                Enabled: 'true'
+
+                # By default, serve from s3
+                DefaultCacheBehavior:
+                    ForwardedValues:
+                        QueryString: 'true'
+                    TargetOriginId: s3-origin
+                    ViewerProtocolPolicy: redirect-to-https
+
+                # Add a behaviour to /api/* to forward requests to API Gateway
+                CacheBehaviors:
+                    # allow all method for the backend to implement
+                    # NB: only certain combinations are possible here. To allow POST, we must allow all.
+                    - AllowedMethods:
+                          [HEAD, DELETE, POST, GET, OPTIONS, PUT, PATCH]
+                      Compress: true
+                      ForwardedValues:
+                          Headers: #define explicit headers, since API Gateway doesn't work otherwise
+                              - Accept
+                              - Referer
+                              - Authorization
+                              - Content-Type
+                          QueryString: true #to transfer get parameters to the gateway
+                      PathPattern: '/api/*' #path pattern after the Gateway stage identifier.
+                      TargetOriginId: api-origin #id of the orignin
+                      ViewerProtocolPolicy: https-only #API Gateway only support https
+                      MaxTTL: 0
+                      MinTTL: 0
+                      DefaultTTL: 0
+
+                DefaultRootObject: index.html
+
+                Origins:
+                    # S3 - note that bucket "website" is publicly served
+                    - CustomOriginConfig:
+                          HTTPPort: '80'
+                          HTTPSPort: '443'
+                          OriginProtocolPolicy: http-only
+                      DomainName: !Sub '${WebBucket}.s3-website-${AWS::Region}.amazonaws.com'
+                      Id: s3-origin
+
+                    # API Gateway
+                    - DomainName: #define the API Gateway origin
+                          Fn::Join:
+                              - ''
+                              - - Ref: SpaOnSamApi
+                                - '.execute-api.'
+                                - Ref: AWS::Region
+                                - '.amazonaws.com'
+                      Id: api-origin
+                      CustomOriginConfig:
+                          OriginProtocolPolicy: https-only #again API-Gateway only supports https
+                      OriginPath: /Prod #name of the deployed stage
+
+                CustomErrorResponses:
+                    - ErrorCode: '404'
+                      ResponsePagePath: '/index.html'
+                      ResponseCode: '200'
+                      ErrorCachingMinTTL: '30'
+
+                ViewerCertificate:
+                    AcmCertificateArn:
+                        !If [
+                            HasDomainName,
+                            !Ref CertificateARN,
+                            !Ref 'AWS::NoValue',
+                        ]
+                    CloudFrontDefaultCertificate:
+                        !If [HasDomainName, !Ref 'AWS::NoValue', 'true']
+                    SslSupportMethod:
+                        !If [HasDomainName, 'sni-only', !Ref 'AWS::NoValue']
+                    MinimumProtocolVersion:
+                        !If [HasDomainName, TLSv1.1_2016, !Ref 'AWS::NoValue']
+
+                HttpVersion: http2
+
+    SpaOnSamApi:
+        Type: AWS::Serverless::Api
+        Properties:
+            Name:
+                Ref: AWS::StackName
+            StageName: Prod
+            EndpointConfiguration: REGIONAL
