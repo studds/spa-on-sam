@@ -8,6 +8,12 @@ import { TodoItemComponent } from './todo-item/todo-item.component';
 import { TodoListComponent } from './todo-list/todo-list.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HomeComponent } from './home/home.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import {
+    MatInputModule,
+    MatButtonModule,
+    MatFormFieldModule
+} from '@angular/material';
 
 @NgModule({
     declarations: [
@@ -16,7 +22,16 @@ import { HomeComponent } from './home/home.component';
         TodoListComponent,
         HomeComponent
     ],
-    imports: [BrowserModule, HttpClientModule, AppRoutingModule, FormsModule],
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        AppRoutingModule,
+        FormsModule,
+        BrowserAnimationsModule,
+        MatInputModule,
+        MatButtonModule,
+        MatFormFieldModule
+    ],
     providers: [],
     bootstrap: [AppComponent]
 })

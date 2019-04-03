@@ -9,10 +9,16 @@
     </ul>
     <div>
         <form #form="ngForm">
-            <input name="item"
-                   required
-                   [(ngModel)]="newItem">
-            <button [disabled]="form.invalid"
+            <mat-form-field>
+                <input name="item"
+                       matInput
+                       required
+                       placeholder="Item text"
+                       [(ngModel)]="newItem">
+            </mat-form-field>
+
+            <button mat-stroked-button
+                    [disabled]="form.invalid"
                     (click)=add(newItem)>Add item</button>
         </form>
     </div>
