@@ -16,7 +16,7 @@ Conditions:
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
     Function:
-        Timeout: 3
+        Timeout: 10
 
 Resources:
     ListItems:
@@ -25,6 +25,9 @@ Resources:
             CodeUri: dist/listItems/
             Handler: listItems.handler
             Runtime: nodejs8.10
+            Policies:
+                - S3CrudPolicy:
+                      BucketName: !Sub '${AWS::StackName}-data'
             Events:
                 ListItems:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -42,6 +45,9 @@ Resources:
             CodeUri: dist/addItem/
             Handler: addItem.handler
             Runtime: nodejs8.10
+            Policies:
+                - S3CrudPolicy:
+                      BucketName: !Sub '${AWS::StackName}-data'
             Events:
                 AddItem:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
