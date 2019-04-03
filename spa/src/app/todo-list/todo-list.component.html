@@ -1,0 +1,19 @@
+<ng-template #loading>
+    <div>Loading...</div>
+</ng-template>
+<div *ngIf="list$ | async as list; else loading">
+    <ul>
+        <li *ngFor="let item of list.items">
+            <app-todo-item [item]="item"></app-todo-item>
+        </li>
+    </ul>
+    <div>
+        <form #form="ngForm">
+            <input name="item"
+                   required
+                   [(ngModel)]="newItem">
+            <button [disabled]="form.invalid"
+                    (click)=add(newItem)>Add item</button>
+        </form>
+    </div>
+</div>
